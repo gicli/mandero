@@ -35,12 +35,12 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
 
   const [title, setTitle] = useState(initialData?.title || '');
   
-  // 개별 날짜/시간 상태 (직접 입력을 위해 분리)
-  const [year, setYear] = useState<number | string>(now.getFullYear());
-  const [month, setMonth] = useState<number | string>(now.getMonth() + 1);
-  const [day, setDay] = useState<number | string>(now.getDate());
-  const [hour, setHour] = useState<number | string>(now.getHours());
-  const [minute, setMinute] = useState<number | string>(now.getMinutes());
+  // 개별 날짜/시간 상태 (직접 입력을 위해 분리 - 새 알람일 경우 비워둠)
+  const [year, setYear] = useState<number | string>(initialData ? now.getFullYear() : '');
+  const [month, setMonth] = useState<number | string>(initialData ? now.getMonth() + 1 : '');
+  const [day, setDay] = useState<number | string>(initialData ? now.getDate() : '');
+  const [hour, setHour] = useState<number | string>(initialData ? now.getHours() : '');
+  const [minute, setMinute] = useState<number | string>(initialData ? now.getMinutes() : '');
 
   const [intervalType, setIntervalType] = useState<IntervalType>(initialData?.intervalType || 'interval');
   const [intervalValue, setIntervalValue] = useState<number | string>(initialData?.intervalValue || 1);
@@ -56,18 +56,84 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
     );
   };
 
+  const getSecondOccurrenceDate = () => {
+    if (year === '' || month === '' || day === '' || hour === '' || minute === '') return null;
+    const start = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
+    if (isNaN(start.getTime())) return null;
+
+    if (intervalType === 'interval') {
+      const second = new Date(start.getTime());
+      second.setDate(second.getDate() + (Number(intervalValue) || 1));
+      return second;
+    } else if (intervalType === 'weekly') {
+      if (repeatDays.length === 0) return null;
+      
+      let firstOccurrence: Date | null = null;
+      for (let i = 0; i <= 7; i++) {
+        let check = new Date(start.getTime());
+        check.setDate(check.getDate() + i);
+        if (repeatDays.includes(check.getDay())) {
+          firstOccurrence = check;
+          break;
+        }
+      }
+      
+      if (!firstOccurrence) return null;
+
+      for (let i = 1; i <= 100; i++) {
+        let check = new Date(firstOccurrence.getTime());
+        check.setDate(check.getDate() + i);
+        
+        if (repeatDays.includes(check.getDay())) {
+           if (intervalValue > 1) {
+              const startRef = new Date(start.getTime());
+              startRef.setDate(startRef.getDate() - startRef.getDay());
+              startRef.setHours(0,0,0,0);
+              
+              const checkRef = new Date(check.getTime());
+              checkRef.setDate(checkRef.getDate() - checkRef.getDay());
+              checkRef.setHours(0,0,0,0);
+              
+              const weekDiff = Math.round((checkRef.getTime() - startRef.getTime()) / (1000 * 60 * 60 * 24 * 7));
+              if (weekDiff % (Number(intervalValue) || 1) === 0) {
+                return check;
+              }
+           } else {
+             return check;
+           }
+        }
+      }
+    }
+    return null;
+  };
+
+  const secondDate = getSecondOccurrenceDate();
+  const secondDateStr = secondDate 
+    ? `${String(secondDate.getMonth() + 1).padStart(2, '0')}/${String(secondDate.getDate()).padStart(2, '0')}`
+    : '';
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (year === '' || month === '' || day === '' || hour === '' || minute === '') {
+      alert('시작 일시를 모두 입력해주세요.');
+      return;
+    }
     
     // 입력된 숫자값들로 Date 객체 생성 (Month는 0-indexed)
     const startDate = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
     
+    if (isNaN(startDate.getTime())) {
+      alert('유효하지 않은 날짜입니다.');
+      return;
+    }
+
     onSubmit({
       id: initialData?.id,
       title: title || '나의 알람',
       startDate: startDate.toISOString(),
       intervalType,
-      intervalValue: Number(intervalValue) || 0,
+      intervalValue: Math.max(1, Number(intervalValue) || 1),
       repeatDays,
       intervalUnit: 'days',
       soundId,
@@ -81,198 +147,215 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
   };
 
   return (
-    <div className="bg-white p-8 sketch-border max-w-lg w-full shadow-xl">
+    <div className="bg-white p-4 sm:p-8 sketch-border max-w-lg w-full shadow-xl">
       <div className="flex items-center gap-4 mb-6 border-b-2 border-slate-100 pb-4">
         <img src={initialData ? SKETCH_ILLUSTRATIONS.EDIT : SKETCH_ILLUSTRATIONS.ALARM} alt="icon" className="w-8 h-8 opacity-70" />
-        <h2 className="text-4xl font-bold">{initialData ? '알람 수정하기' : '알람 추가하기'}</h2>
+        <h2 className="text-2xl sm:text-4xl font-bold">{initialData ? '알람 수정하기' : '알람 추가하기'}</h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* 제목 */}
         <div>
-          <label className="block text-2xl font-bold mb-2">제목</label>
+          <label className="block text-base font-bold mb-2 text-slate-600">제목</label>
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목을 입력하세요"
-            className="w-full p-4 sketch-border bg-slate-50 outline-none text-xl"
+            className="w-full p-2.5 sketch-border bg-slate-50 outline-none text-base"
             autoFocus
           />
         </div>
 
-        {/* 시작 일시 직접 입력 (Typing UI) */}
-        <div>
-          <label className="block text-2xl font-bold mb-2">시작 일시 (직접 입력)</label>
-          <div className="flex flex-wrap items-center gap-2 p-1">
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                value={year}
-                onChange={(e) => setYear(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-20 p-2 sketch-border bg-sky-50 text-center text-xl outline-none"
-                placeholder="2025"
-              />
-              <span className="text-xl font-bold">년</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min="1"
-                max="12"
-                value={month}
-                onChange={(e) => setMonth(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-14 p-2 sketch-border bg-sky-50 text-center text-xl outline-none"
-                placeholder="10"
-              />
-              <span className="text-xl font-bold">월</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min="1"
-                max="31"
-                value={day}
-                onChange={(e) => setDay(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-14 p-2 sketch-border bg-sky-50 text-center text-xl outline-none"
-                placeholder="27"
-              />
-              <span className="text-xl font-bold">일</span>
-            </div>
-            <div className="flex items-center gap-1 ml-2">
-              <input
-                type="number"
-                min="0"
-                max="23"
-                value={hour}
-                onChange={(e) => setHour(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-14 p-2 sketch-border bg-orange-50 text-center text-xl outline-none"
-                placeholder="09"
-              />
-              <span className="text-xl font-bold">시</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <input
-                type="number"
-                min="0"
-                max="59"
-                value={minute}
-                onChange={(e) => setMinute(e.target.value === '' ? '' : parseInt(e.target.value))}
-                className="w-14 p-2 sketch-border bg-orange-50 text-center text-xl outline-none"
-                placeholder="30"
-              />
-              <span className="text-xl font-bold">분</span>
-            </div>
+        {/* 시작 일시 직접 입력 (Ultra Compact UI) */}
+        <div className="bg-slate-50 p-3 sketch-border">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-base font-bold text-slate-600">시작 일시</label>
+            <span className="text-xs text-slate-400 font-sans">직접 입력 가능</span>
+          </div>
+          <div className="flex items-center gap-1 justify-center bg-white p-2 sketch-border border-dashed">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={year}
+              onChange={(e) => setYear(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-14 text-center text-sm outline-none border-b border-slate-200 focus:border-sky-400"
+              placeholder="년"
+            />
+            <span className="text-slate-300">/</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={month}
+              onChange={(e) => setMonth(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-8 text-center text-sm outline-none border-b border-slate-200 focus:border-sky-400"
+              placeholder="월"
+            />
+            <span className="text-slate-300">/</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={day}
+              onChange={(e) => setDay(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-8 text-center text-sm outline-none border-b border-slate-200 focus:border-sky-400"
+              placeholder="일"
+            />
+            <div className="w-px h-4 bg-slate-200 mx-2"></div>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={hour}
+              onChange={(e) => setHour(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-8 text-center text-sm outline-none border-b border-slate-200 focus:border-orange-400"
+              placeholder="시"
+            />
+            <span className="text-slate-300">:</span>
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={minute}
+              onChange={(e) => setMinute(e.target.value.replace(/[^0-9]/g, ''))}
+              className="w-8 text-center text-sm outline-none border-b border-slate-200 focus:border-orange-400"
+              placeholder="분"
+            />
           </div>
         </div>
 
         {/* 볼륨 및 알람 반복 설정 */}
         <div className="space-y-6">
           <div>
-            <label className="block text-2xl font-bold mb-2">볼륨: {volume}%</label>
+            <label className="block text-xl sm:text-2xl font-bold mb-2">볼륨: {volume}%</label>
             <input
               type="range"
               min="0"
               max="100"
               value={volume}
               onChange={(e) => setVolume(e.target.value === '' ? '' : parseInt(e.target.value))}
-              className="w-full h-12 accent-sky-300 cursor-pointer"
+              className="w-full h-10 sm:h-12 accent-sky-300 cursor-pointer"
             />
           </div>
 
-          <div className="sketch-border p-4 bg-slate-50">
-            <label className="block text-2xl font-bold mb-4">알람 유형</label>
-            <div className="flex gap-4 mb-4">
+          <div className="sketch-border p-3 bg-slate-50">
+            <label className="block text-base font-bold mb-3 text-slate-600">알람 유형</label>
+            <div className="flex gap-2 mb-4">
               <button
                 type="button"
                 onClick={() => setIntervalType('once')}
-                className={`flex-1 py-3 sketch-button text-xl font-bold transition-all ${intervalType === 'once' ? 'bg-sky-300 ring-2 ring-sky-500 shadow-md scale-105 text-white' : 'bg-slate-100 text-slate-500'}`}
+                className={`flex-1 py-1.5 sketch-button text-sm sm:text-base font-bold transition-all ${intervalType === 'once' ? 'bg-sky-200 ring-1 ring-sky-400 shadow-inner' : 'bg-white opacity-70'}`}
               >
-                일자 지정 (1회)
+                {/* 모바일에서는 더 짧게 */}
+                <span className="sm:hidden">한번</span>
+                <span className="hidden sm:inline">일자 지정</span>
               </button>
               <button
                 type="button"
                 onClick={() => intervalType === 'once' && setIntervalType('interval')}
-                className={`flex-1 py-3 sketch-button text-xl font-bold transition-all ${intervalType !== 'once' ? 'bg-amber-300 ring-2 ring-amber-500 shadow-md scale-105 text-slate-900' : 'bg-slate-100 text-slate-500'}`}
+                className={`flex-1 py-1.5 sketch-button text-sm sm:text-base font-bold transition-all ${intervalType !== 'once' ? 'bg-amber-200 ring-1 ring-amber-400 shadow-inner' : 'bg-white opacity-70'}`}
               >
-                반복 설정
+                반복
               </button>
             </div>
 
             {intervalType !== 'once' && (
-              <div className="pt-4 border-t-2 border-slate-200 border-dashed">
-                <div className="grid grid-cols-2 gap-4 items-start">
-                  {/* 일자 반복 컬럼 */}
-                  <div className="space-y-4">
-                    <button
-                      type="button"
-                      onClick={() => setIntervalType('interval')}
-                      className={`w-full py-2 sketch-button text-xl font-bold transition-all ${intervalType === 'interval' ? 'bg-amber-300 ring-2 ring-amber-500 shadow-md scale-105 text-slate-900' : 'bg-slate-100 text-slate-500'}`}
-                    >
-                      일자 반복
-                    </button>
+              <div className="pt-3 border-t border-slate-200 border-dashed">
+                <div className="flex gap-2 mb-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIntervalType('interval');
+                      if (intervalType === 'weekly') setIntervalValue(1);
+                    }}
+                    className={`flex-1 py-1.5 sketch-button text-sm sm:text-base font-bold transition-all ${intervalType === 'interval' ? 'bg-amber-100 ring-1 ring-amber-300 shadow-inner' : 'bg-white opacity-70'}`}
+                  >
+                    일 반복
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIntervalType('weekly');
+                      if (intervalType === 'interval') setIntervalValue(1);
+                    }}
+                    className={`flex-1 py-1.5 sketch-button text-sm sm:text-base font-bold transition-all ${intervalType === 'weekly' ? 'bg-amber-100 ring-1 ring-amber-300 shadow-inner' : 'bg-white opacity-70'}`}
+                  >
+                    요일 반복
+                  </button>
+                </div>
 
-                    {intervalType === 'interval' && (
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 justify-center">
+                {intervalType === 'interval' ? (
+                  <div className="flex gap-2">
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex items-center justify-center gap-2 py-1.5 sketch-button bg-emerald-50 ring-1 ring-emerald-300">
+                        <input
+                          type="number"
+                          min="1"
+                          value={intervalValue}
+                          onChange={(e) => setIntervalValue(e.target.value === '' ? '' : parseInt(e.target.value))}
+                          className="w-12 bg-transparent outline-none text-sm text-center font-bold border-b border-emerald-400"
+                        />
+                        <span className="text-sm font-bold text-emerald-700">일</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 py-1.5 sketch-button bg-slate-50 ring-1 ring-slate-200 border-dashed">
+                        <span className="text-[10px] text-slate-400 font-bold uppercase">2차:</span>
+                        <span className="text-sm font-bold text-rose-500">{secondDateStr || '--/--'}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1"></div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex justify-between gap-1 overflow-x-auto pb-2">
+                      {DAYS.map((day) => (
+                        <button
+                          key={day.value}
+                          type="button"
+                          onClick={() => toggleDay(day.value)}
+                          className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-lg sm:text-xl font-bold shrink-0 transition-all ${
+                            repeatDays.includes(day.value)
+                              ? 'bg-rose-400 text-white shadow-md scale-110'
+                              : 'bg-white text-slate-400 border border-slate-200'
+                          } ${day.value === 0 ? 'text-rose-500' : day.value === 6 ? 'text-blue-500' : ''}`}
+                        >
+                          {day.label}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {/* 주 단위 건너뛰기 설정 (주 건너뜀 형태 - 버튼 스타일) */}
+                    <div className="flex gap-2 pt-3 border-t border-slate-100">
+                      <div className="flex-1"></div>
+                      <div className="flex-1 flex flex-col gap-2">
+                        <div className="flex items-center justify-center gap-2 py-1.5 sketch-button bg-indigo-50 ring-1 ring-indigo-300">
                           <input
                             type="number"
-                            min="1"
-                            value={intervalValue}
-                            onChange={(e) => setIntervalValue(e.target.value === '' ? '' : parseInt(e.target.value))}
-                            className="w-16 p-2 sketch-border bg-emerald-50 outline-none text-xl text-center"
+                            min="0"
+                            max="51"
+                            value={Number(intervalValue) - 1}
+                            onChange={(e) => {
+                              const val = e.target.value === '' ? 0 : parseInt(e.target.value);
+                              setIntervalValue(val + 1);
+                            }}
+                            className="w-10 bg-transparent outline-none text-sm text-center font-bold border-b border-indigo-400"
                           />
-                          <span className="text-lg font-bold text-slate-700">일 마다</span>
+                          <span className="text-sm font-bold text-indigo-700">주 건너뜀</span>
                         </div>
-                        {(() => {
-                          const startDate = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
-                          if (!isNaN(startDate.getTime()) && intervalValue) {
-                            const nextDate = new Date(startDate);
-                            nextDate.setDate(nextDate.getDate() + Number(intervalValue));
-                            return (
-                              <div className="text-center py-2 bg-emerald-200 rounded-xl border-2 border-emerald-600 shadow-md">
-                                <span className="text-lg font-bold text-emerald-950">
-                                  💡 다음일자: {nextDate.getMonth() + 1}/{nextDate.getDate()}
-                                </span>
-                              </div>
-                            );
-                          }
-                          return null;
-                        })()}
+                        <div className="flex items-center justify-center gap-2 py-1.5 sketch-button bg-slate-50 ring-1 ring-slate-200 border-dashed">
+                          <span className="text-[10px] text-slate-400 font-bold uppercase">2차:</span>
+                          <span className="text-sm font-bold text-rose-500">{secondDateStr || '--/--'}</span>
+                        </div>
                       </div>
-                    )}
+                    </div>
+                    <div className="text-center">
+                      <span className="text-xs text-slate-400 font-sans italic">
+                        {Number(intervalValue) === 1 ? '(매주)' : `(${Number(intervalValue)}주 마다)`}
+                      </span>
+                    </div>
                   </div>
-
-                  {/* 요일 반복 컬럼 */}
-                  <div className="space-y-4">
-                    <button
-                      type="button"
-                      onClick={() => setIntervalType('weekly')}
-                      className={`w-full py-2 sketch-button text-xl font-bold transition-all ${intervalType === 'weekly' ? 'bg-amber-300 ring-2 ring-amber-500 shadow-md scale-105 text-slate-900' : 'bg-slate-100 text-slate-500'}`}
-                    >
-                      요일 반복
-                    </button>
-
-                    {intervalType === 'weekly' && (
-                      <div className="flex flex-wrap justify-center gap-1">
-                        {DAYS.map((day) => (
-                          <button
-                            key={day.value}
-                            type="button"
-                            onClick={() => toggleDay(day.value)}
-                            className={`w-9 h-9 flex items-center justify-center rounded-full text-lg font-bold transition-all ${
-                              repeatDays.includes(day.value)
-                                ? 'bg-rose-400 text-white shadow-md scale-110'
-                                : 'bg-white text-slate-400 border border-slate-200'
-                            } ${day.value === 0 ? 'text-rose-500' : day.value === 6 ? 'text-blue-500' : ''}`}
-                          >
-                            {day.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </div>
@@ -280,24 +363,24 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
 
         {/* 소리 선택 리스트 */}
         <div>
-          <label className="block text-2xl font-bold mb-2">알람 소리 선택</label>
-          <div className="h-48 overflow-y-auto p-2 sketch-border bg-slate-50 space-y-2">
+          <label className="block text-xl sm:text-2xl font-bold mb-2">알람 소리 선택</label>
+          <div className="h-40 sm:h-48 overflow-y-auto p-2 sketch-border bg-slate-50 space-y-2">
             {SOUND_OPTIONS.map((sound) => (
               <button
                 key={sound.id}
                 type="button"
                 onClick={() => handleSoundSelection(sound.id)}
-                className={`w-full p-4 text-left flex items-center justify-between transition-all sketch-button border-none hover:bg-slate-100 ${
+                className={`w-full p-3 sm:p-4 text-left flex items-center justify-between transition-all sketch-button border-none hover:bg-slate-100 ${
                   soundId === sound.id 
                   ? 'bg-amber-100 ring-2 ring-amber-400 shadow-inner' 
                   : 'bg-white'
                 }`}
               >
                 <div>
-                  <div className="font-bold text-xl">{sound.name}</div>
-                  <div className="text-sm opacity-60 font-sans leading-tight">{sound.description}</div>
+                  <div className="font-bold text-lg sm:text-xl">{sound.name}</div>
+                  <div className="text-xs sm:text-sm opacity-60 font-sans leading-tight">{sound.description}</div>
                 </div>
-                <span className="text-2xl">
+                <span className="text-xl sm:text-2xl">
                   {soundId === sound.id ? '🔊' : '▶'}
                 </span>
               </button>
@@ -306,19 +389,19 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
         </div>
 
         {/* 버튼 */}
-        <div className="flex gap-4 pt-2">
+        <div className="flex gap-2 sm:gap-4 pt-2">
           <button
             type="button"
             onClick={onCancel}
-            className="flex-1 py-4 sketch-button bg-slate-200 text-2xl font-bold"
+            className="flex-1 py-3 sm:py-4 sketch-button bg-slate-200 text-xl sm:text-2xl font-bold"
           >
             취소
           </button>
           <button
             type="submit"
-            className="flex-1 py-4 sketch-button bg-rose-200 text-2xl font-bold"
+            className="flex-1 py-3 sm:py-4 sketch-button bg-rose-200 text-xl sm:text-2xl font-bold"
           >
-            {initialData ? '저장하기' : '알람 생성'}
+            {initialData ? '저장' : '생성'}
           </button>
         </div>
       </form>

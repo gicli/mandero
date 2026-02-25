@@ -27,32 +27,38 @@ const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, onDelete, onEdit, colorInd
 
   const getRepeatText = () => {
     if (alarm.intervalType === 'once') {
-      return '일자 지정 (1회)';
+      return '1회성';
     }
     if (alarm.intervalType === 'interval') {
       return `${alarm.intervalValue}일 마다`;
     }
     const dayLabels = ['일', '월', '화', '수', '목', '금', '토'];
-    if (!alarm.repeatDays || alarm.repeatDays.length === 0) return '반복 없음';
-    if (alarm.repeatDays.length === 7) return '매일';
-    return alarm.repeatDays.map(d => dayLabels[d]).join(', ');
+    if (!alarm.repeatDays || alarm.repeatDays.length === 0) return '없음';
+    
+    let text = alarm.repeatDays.length === 7 ? '매일' : alarm.repeatDays.map(d => dayLabels[d]).join(',');
+    
+    if (alarm.intervalValue > 1) {
+      text += ` (${alarm.intervalValue - 1}주 건너뜀)`;
+    }
+    
+    return text;
   };
 
   return (
     <div className={`flex items-center w-full p-4 border-b-2 border-slate-200 ${bgColor} hover:brightness-95 transition-all group`}>
       {/* 1. 알람 시간 및 날짜 (좌측 배치) */}
-      <div className="shrink-0 flex flex-col border-r-2 border-slate-300 border-dashed mr-4 pr-4 min-w-[80px] items-center">
-        <div className="text-3xl font-bold text-slate-800 leading-none mb-1">
+      <div className="shrink-0 flex flex-col border-r-2 border-slate-300 border-dashed mr-3 sm:mr-4 pr-3 sm:pr-4 min-w-[70px] sm:min-w-[80px] items-center">
+        <div className="text-2xl sm:text-3xl font-bold text-slate-800 leading-none mb-1">
           {timeStr}
         </div>
-        <div className="text-xl font-bold text-rose-500 leading-none">
+        <div className="text-lg sm:text-xl font-bold text-rose-500 leading-none">
           {dateStr}
         </div>
       </div>
 
       {/* 2. 알람 이름 (중앙) */}
       <div className="flex-1 min-w-0 pr-2">
-        <h3 className="text-3xl font-bold truncate text-slate-800">
+        <h3 className="text-xl sm:text-3xl font-bold truncate text-slate-800">
           {alarm.title}
         </h3>
       </div>

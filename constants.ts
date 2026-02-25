@@ -26,8 +26,8 @@ export const PASTEL_COLORS = [
 ];
 
 export const SKETCH_ILLUSTRATIONS = {
-  CLOCK: 'https://cdn-icons-png.flaticon.com/512/911/911242.png',
-  ALARM: 'https://cdn-icons-png.flaticon.com/512/2972/2972531.png',
+  CLOCK: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="276" r="180" fill="%239381ff"/><circle cx="256" cy="276" r="140" fill="%23fff9ec"/><path d="M256 196v80h60" stroke="%231a1a1a" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M140 120l-40-40m272 40l40-40" stroke="%239381ff" stroke-width="40" stroke-linecap="round"/><circle cx="100" cy="80" r="50" fill="%239381ff"/><circle cx="412" cy="80" r="50" fill="%239381ff"/><path d="M206 70h100" stroke="%23ffb703" stroke-width="20" stroke-linecap="round"/><path d="M160 440l-30 40m222-40l30 40" stroke="%23ffb703" stroke-width="30" stroke-linecap="round"/></svg>`,
+  ALARM: `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><circle cx="256" cy="276" r="180" fill="%239381ff"/><circle cx="256" cy="276" r="140" fill="%23fff9ec"/><path d="M256 196v80h60" stroke="%231a1a1a" stroke-width="12" stroke-linecap="round" fill="none"/><path d="M140 120l-40-40m272 40l40-40" stroke="%239381ff" stroke-width="40" stroke-linecap="round"/><circle cx="100" cy="80" r="50" fill="%239381ff"/><circle cx="412" cy="80" r="50" fill="%239381ff"/><path d="M206 70h100" stroke="%23ffb703" stroke-width="20" stroke-linecap="round"/><path d="M160 440l-30 40m222-40l30 40" stroke="%23ffb703" stroke-width="30" stroke-linecap="round"/></svg>`,
   CALENDAR: 'https://cdn-icons-png.flaticon.com/512/3652/3652191.png',
   SOUND: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
   EDIT: 'https://cdn-icons-png.flaticon.com/512/1159/1159633.png'

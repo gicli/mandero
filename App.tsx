@@ -50,28 +50,65 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [alarms, activeAlert]);
 
-  const calculateNextOccurrence = (baseDate: Date, alarm: { intervalType: string, intervalValue: number, repeatDays: number[] }): Date | null => {
+  const calculateNextOccurrence = (baseDate: Date, alarm: { intervalType: string, intervalValue: number, repeatDays: number[], startDate: string }): Date | null => {
     const next = new Date(baseDate.getTime());
+    const start = new Date(alarm.startDate);
     
     if (alarm.intervalType === 'once') {
       return null;
     }
     
     if (alarm.intervalType === 'interval') {
-      next.setDate(next.getDate() + alarm.intervalValue);
+      next.setDate(next.getDate() + Math.max(1, alarm.intervalValue));
     } else {
       // 요일 반복 (Weekly repeat)
       if (!alarm.repeatDays || alarm.repeatDays.length === 0) {
         next.setDate(next.getDate() + 1);
       } else {
+        // 다음 발생 가능한 요일을 찾을 때까지 하루씩 전진
         let found = false;
-        for (let i = 1; i <= 7; i++) {
+        // 최대 100일까지만 루프 (무한 루프 방지)
+        for (let i = 1; i <= 100; i++) {
           const checkDate = new Date(baseDate.getTime());
           checkDate.setDate(checkDate.getDate() + i);
+          
+          // 1. 요일이 포함되는지 확인
           if (alarm.repeatDays.includes(checkDate.getDay())) {
-            next.setDate(next.getDate() + i);
-            found = true;
-            break;
+            // 2. 주 단위 간격 확인 (intervalValue가 1보다 크면 건너뛰기 로직 적용)
+            if (alarm.intervalType === 'weekly' && alarm.intervalValue > 1) {
+              // 시작일이 속한 주의 일요일(또는 월요일) 기준으로 몇 주가 지났는지 계산
+              // 여기서는 단순하게 시작일로부터의 일수 차이를 7로 나눈 주차를 사용
+              const diffTime = checkDate.getTime() - start.getTime();
+              const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+              
+              // 시작일이 속한 주를 0주차로 보고, (현재주차 - 시작주차) % 간격 == 0 인지 확인
+              // 주의 시작을 일요일로 맞추기 위해 조정이 필요할 수 있으나, 
+              // 사용자 경험상 '시작일로부터 N주'가 직관적임
+              const startWeekDay = start.getDay();
+              const checkWeekDay = checkDate.getDay();
+              
+              // 시작일이 포함된 주의 일요일 기준 일수 차이
+              const startRef = new Date(start.getTime());
+              startRef.setDate(startRef.getDate() - startWeekDay);
+              startRef.setHours(0, 0, 0, 0);
+              
+              const checkRef = new Date(checkDate.getTime());
+              checkRef.setDate(checkRef.getDate() - checkWeekDay);
+              checkRef.setHours(0, 0, 0, 0);
+              
+              const weekDiff = Math.round((checkRef.getTime() - startRef.getTime()) / (1000 * 60 * 60 * 24 * 7));
+              
+              const interval = Math.max(1, alarm.intervalValue);
+              if (weekDiff % interval === 0) {
+                next.setDate(next.getDate() + i);
+                found = true;
+                break;
+              }
+            } else {
+              next.setDate(next.getDate() + i);
+              found = true;
+              break;
+            }
           }
         }
         if (!found) next.setDate(next.getDate() + 1);
@@ -201,66 +238,47 @@ const App: React.FC = () => {
         <div className="wiggle mb-8"><img src={SKETCH_ILLUSTRATIONS.ALARM} alt="Alert" className="w-64 h-64 mx-auto" /></div>
         <h1 className="text-7xl font-bold text-slate-800 mb-6">{activeAlert.title}</h1>
         <p className="text-3xl text-slate-600 mb-12">알람이 울리고 있습니다!</p>
-        <button onClick={stopAlarm} className="px-16 py-8 bg-white sketch-button text-4xl font-bold shadow-2xl hover:scale-110 active:scale-95 transition-transform">알람 끄기</button>
+        <button onClick={stopAlarm} className="px-8 py-4 sm:px-16 sm:py-8 bg-white sketch-button text-2xl sm:text-4xl font-bold shadow-2xl hover:scale-110 active:scale-95 transition-transform">알람 끄기</button>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen pb-40">
-      <nav className="p-6 flex justify-between items-center max-w-5xl mx-auto">
-        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setView(AppView.DASHBOARD); setEditingAlarm(undefined); }}>
-          <div className="relative w-12 h-12 flex items-center justify-center">
-            {/* Alarm Clock SVG */}
-            <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-sm">
-              {/* Legs */}
-              <path d="M25 85 L15 95" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
-              <path d="M75 85 L85 95" stroke="#334155" strokeWidth="6" strokeLinecap="round" />
-              {/* Bells */}
-              <circle cx="25" cy="25" r="15" fill="#fbbf24" stroke="#334155" strokeWidth="3" />
-              <circle cx="75" cy="25" r="15" fill="#fbbf24" stroke="#334155" strokeWidth="3" />
-              {/* Hammer/Top handle */}
-              <path d="M45 15 L55 15" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-              <path d="M50 10 L50 20" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-              {/* Body */}
-              <circle cx="50" cy="55" r="38" fill="#ef4444" stroke="#334155" strokeWidth="4" />
-              {/* Face */}
-              <circle cx="50" cy="55" r="30" fill="white" stroke="#334155" strokeWidth="2" />
-              {/* Hands */}
-              <line x1="50" y1="55" x2="50" y2="35" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-              <line x1="50" y1="55" x2="65" y2="65" stroke="#334155" strokeWidth="4" strokeLinecap="round" />
-              <circle cx="50" cy="55" r="3" fill="#334155" />
-            </svg>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight">맘대로 알람</h1>
+      <nav className="p-4 sm:p-6 flex justify-between items-center max-w-5xl mx-auto">
+        <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => { setView(AppView.DASHBOARD); setEditingAlarm(undefined); }}>
+          <img src={SKETCH_ILLUSTRATIONS.CLOCK} alt="logo" className="w-8 h-8 sm:w-10 sm:h-10" />
+          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">맘대로 알람</h1>
         </div>
-        <div className="text-2xl font-bold bg-white/50 px-4 py-1 sketch-border">
+        <div className="text-lg sm:text-2xl font-bold bg-white/50 px-3 py-1 sm:px-4 sm:py-1 sketch-border">
           {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-6 mt-4">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
         {view === AppView.DASHBOARD && (
-          <div className="space-y-10">
-            <div className="bg-sky-50 p-6 sketch-border">
-              <h3 className="text-lg font-bold text-sky-800 mb-1 uppercase tracking-widest">다음 알람까지</h3>
+          <div className="space-y-6 sm:space-y-10">
+            <div className="bg-sky-50 p-4 sm:p-6 sketch-border">
+              <h3 className="text-base sm:text-lg font-bold text-sky-800 mb-1 uppercase tracking-widest">다음 알람까지</h3>
               {nearestAlarm ? (
                 <div>
-                  <div className="text-4xl font-bold text-slate-800 mb-1">
+                  <div className="text-2xl sm:text-4xl font-bold text-slate-800 mb-1">
                     {timeRemainingString}
                   </div>
-                  <div className="text-xl text-emerald-600 font-bold truncate">
+                  <div className="text-lg sm:text-xl text-emerald-600 font-bold truncate">
                     {nearestAlarm.title} ({new Date(nearestAlarm.nextTriggerAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})
                   </div>
                 </div>
-              ) : <p className="text-xl text-slate-400 font-bold">활성 알람 없음</p>}
+              ) : <p className="text-lg sm:text-xl text-slate-400 font-bold">활성 알람 없음</p>}
             </div>
 
             <section>
-              <h2 className="text-5xl font-bold mb-6 border-b-4 border-slate-200 pb-2">나의 알람 목록</h2>
+              <div className="flex justify-between items-end mb-6 border-b-4 border-slate-200 pb-2">
+                <h2 className="text-3xl sm:text-5xl font-bold">나의 알람 목록</h2>
+              </div>
               {alarms.length === 0 ? (
-                <div className="py-20 text-center bg-white/40 sketch-border border-dashed">
-                  <p className="text-3xl text-slate-400 font-bold">등록된 알람이 없습니다.</p>
+                <div className="py-10 sm:py-20 text-center bg-white/40 sketch-border border-dashed">
+                  <p className="text-xl sm:text-3xl text-slate-400 font-bold">등록된 알람이 없습니다.</p>
                 </div>
               ) : (
                 <div className="bg-white sketch-border overflow-hidden flex flex-col shadow-lg">
@@ -294,11 +312,13 @@ const App: React.FC = () => {
       {view === AppView.DASHBOARD && (
         <button 
           onClick={() => { setEditingAlarm(undefined); setView(AppView.CREATE); }}
-          className="fixed bottom-12 right-12 w-28 h-28 bg-sky-300 text-white rounded-full flex flex-col items-center justify-center text-xl font-bold shadow-2xl hover:scale-110 active:scale-90 transition-transform z-40 sketch-button border-none"
+          className="fixed bottom-8 right-8 sm:bottom-12 sm:right-12 w-20 h-20 sm:w-28 sm:h-28 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-[0_15px_30px_-5px_rgba(244,63,94,0.4)] hover:shadow-[0_20px_40px_-5px_rgba(244,63,94,0.5)] hover:scale-110 active:scale-95 transition-all z-40 border-4 border-white group"
           title="새 알람 추가"
         >
-          <span className="text-5xl leading-none">+</span>
-          <span className="text-lg">알람 추가</span>
+          <span className="text-5xl sm:text-7xl leading-none block group-hover:rotate-90 transition-transform duration-300">+</span>
+          
+          {/* 장식용 원형 테두리 */}
+          <div className="absolute inset-0 rounded-full border-2 border-rose-300/30 scale-90 pointer-events-none"></div>
         </button>
       )}
     </div>

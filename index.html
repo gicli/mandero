@@ -7,50 +7,48 @@
   <title>맘대로 알람</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- 나눔펜글씨와 개구체 폰트 임포트 -->
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Noto+Serif+KR:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    /* 유화/갤러리 스타일 적용 */
+    /* 세련된 모던 스타일 적용 */
     * {
-      font-family: 'Noto Serif KR', 'Cormorant Garamond', serif;
+      font-family: 'Pretendard Variable', Pretendard, Inter, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
     }
     
     body {
-      background-color: #f4f1ea; /* 캔버스 색상 */
-      background-image: url("https://www.transparenttextures.com/patterns/canvas-orange.png"); /* 캔버스 질감 */
-      color: #2c1e1a; /* 깊은 갈색조 */
-      font-size: 1.1rem;
-      line-height: 1.6;
+      background-color: #f8fafc; /* 더 깔끔한 배경색 */
+      color: #1e293b; /* 세련된 슬레이트 색상 */
+      font-size: 1rem;
+      line-height: 1.5;
     }
 
     input, button, select, textarea {
-      font-family: 'Noto Serif KR', 'Cormorant Garamond', serif !important;
+      font-family: inherit !important;
     }
 
     .sketch-border {
-      border: 1px solid rgba(0,0,0,0.1);
-      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: 12px;
       box-shadow: 
-        inset 0 0 40px rgba(0,0,0,0.05),
-        0 10px 20px rgba(0,0,0,0.1),
-        0 0 0 8px #fff,
-        0 0 0 10px #d4af37; /* 금색 프레임 느낌 */
+        0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+        0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      background: white;
     }
 
     .sketch-button {
-      background: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(240,240,240,0.9));
-      border: 1px solid #d4af37;
-      border-radius: 2px;
-      transition: all 0.3s ease;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
-      box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      letter-spacing: -0.01em;
     }
 
     .sketch-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 4px 4px 10px rgba(0,0,0,0.15);
-      background: #fff;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      border-color: #cbd5e1;
     }
 
     .sketch-button:active {
@@ -58,19 +56,10 @@
       box-shadow: 1px 1px 2px rgba(0,0,0,0.1);
     }
 
-    /* 유화 느낌의 브러쉬 터치 효과를 위한 클래스 */
+    /* 유화 느낌의 브러쉬 터치 효과 제거 */
     .oil-touch {
       position: relative;
       overflow: hidden;
-    }
-    
-    .oil-touch::after {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: url("https://www.transparenttextures.com/patterns/natural-paper.png");
-      opacity: 0.2;
-      pointer-events: none;
     }
 
     @keyframes float {
