@@ -127,6 +127,56 @@ class AudioService {
         }
         break;
 
+      case 'ocean-waves': // 푸른 바다의 파도소리
+        for (let i = 0; i < 5; i++) {
+          const t = now + i * 2.0;
+          this.playSlide(ctx, 100, 50, 2.0, g * 0.3, 'sine', t); // 파도 소리 베이스
+          if (i % 2 === 0) {
+            this.playSlide(ctx, 3000, 2500, 0.3, g * 0.1, 'sine', t + 0.5); // 갈매기 소리 느낌
+          }
+        }
+        break;
+
+      case 'rainy-window': // 창밖의 빗소리
+        for (let i = 0; i < 40; i++) {
+          const t = now + i * 0.15;
+          this.playNote(ctx, 500 + Math.random() * 1000, t, 0.05, g * 0.05, 'sine');
+        }
+        break;
+
+      case 'starlight-lullaby': // 별빛 아래 자장가 (오르골)
+        const lullaby = [523.25, 659.25, 783.99, 659.25, 880.00, 783.99, 659.25, 523.25];
+        lullaby.forEach((f, i) => {
+          this.playNote(ctx, f, now + i * 0.8, 1.5, g * 0.8, 'sine');
+          this.playNote(ctx, f * 2, now + i * 0.8, 1.0, g * 0.2, 'sine'); // 배음 추가
+        });
+        break;
+
+      case 'techno-pulse': // 테크노 펄스
+        for (let i = 0; i < 16; i++) {
+          const t = now + i * 0.25;
+          this.playNote(ctx, 60, t, 0.1, g * 2, 'sine'); // 킥
+          this.playNote(ctx, 440, t + 0.125, 0.05, g * 0.5, 'square'); // 하이햇 느낌
+          if (i % 4 === 0) this.playNote(ctx, 220, t, 0.2, g, 'sawtooth');
+        }
+        break;
+
+      case 'morning-coffee': // 카페의 아침 (보사노바 리듬)
+        const bossa = [196.00, 261.63, 329.63, 392.00, 440.00, 392.00, 329.63, 261.63];
+        bossa.forEach((f, i) => {
+          this.playNote(ctx, f, now + i * 0.4, 0.3, g * 0.6, 'triangle');
+          if (i % 2 === 0) this.playNote(ctx, 1000, now + i * 0.4 + 0.1, 0.05, g * 0.1, 'sine'); // 컵 소리 느낌
+        });
+        break;
+
+      case 'space-odyssey': // 우주 오디세이
+        for (let i = 0; i < 4; i++) {
+          const t = now + i * 2.0;
+          this.playSlide(ctx, 100, 400, 2.0, g * 0.4, 'sine', t);
+          this.playSlide(ctx, 150, 50, 2.0, g * 0.2, 'triangle', t);
+        }
+        break;
+
       default:
         this.playNote(ctx, 440, now, 1.0, g);
     }

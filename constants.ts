@@ -11,7 +11,13 @@ export const SOUND_OPTIONS: SoundOption[] = [
   { id: 'zen-sanctuary', name: '명상 힐링 벨', description: '마음을 편안하게 해주는 깊은 울림의 벨' },
   { id: 'pixel-quest', name: '8비트 레트로 모험', description: '고전 게임 주인공이 된 듯한 경쾌한 사운드' },
   { id: 'midnight-jazz', name: '세련된 재즈 라운지', description: '도시의 아침을 여는 고급스러운 재즈 리듬' },
-  { id: 'panic-pulse', name: '절대 못 자는 경고음', description: '강력한 사이렌으로 확실하게 깨워주는 알람' }
+  { id: 'panic-pulse', name: '절대 못 자는 경고음', description: '강력한 사이렌으로 확실하게 깨워주는 알람' },
+  { id: 'ocean-waves', name: '푸른 바다의 파도소리', description: '시원한 파도와 갈매기 소리가 들리는 해변의 아침' },
+  { id: 'rainy-window', name: '창밖의 빗소리', description: '차분하게 내리는 빗소리로 시작하는 감성적인 아침' },
+  { id: 'starlight-lullaby', name: '별빛 아래 자장가', description: '오르골의 맑은 소리가 마음을 편안하게 해주는 선율' },
+  { id: 'techno-pulse', name: '테크노 펄스', description: '강렬한 비트와 전자음으로 잠을 깨워주는 클럽 사운드' },
+  { id: 'morning-coffee', name: '카페의 아침', description: '잔잔한 보사노바 리듬과 함께하는 여유로운 시작' },
+  { id: 'space-odyssey', name: '우주 오디세이', description: '신비롭고 웅장한 우주 공간의 울림' }
 ];
 
 export const PASTEL_COLORS = [
