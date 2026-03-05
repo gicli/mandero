@@ -5,6 +5,7 @@ import { SKETCH_ILLUSTRATIONS } from './constants';
 import { audioService } from './services/audioService';
 import AlarmCard from './components/AlarmCard';
 import AlarmForm from './components/AlarmForm';
+import IconGenerator from './components/IconGenerator';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.DASHBOARD);
@@ -286,6 +287,12 @@ const App: React.FC = () => {
             <section>
               <div className="flex justify-between items-end mb-6 border-b-4 border-slate-200 pb-2">
                 <h2 className="text-3xl sm:text-5xl font-bold">나의 알람 목록</h2>
+                <button 
+                  onClick={() => setView(AppView.ICON_GEN)}
+                  className="text-sm sm:text-base font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 mb-1"
+                >
+                  <span>📱 iOS 아이콘 만들기</span>
+                </button>
               </div>
               {alarms.length === 0 ? (
                 <div className="py-10 sm:py-20 text-center bg-white/40 sketch-border border-dashed">
@@ -316,6 +323,12 @@ const App: React.FC = () => {
               onSubmit={handleSaveAlarm} 
               onCancel={() => { setEditingAlarm(undefined); setView(AppView.DASHBOARD); }} 
             />
+          </div>
+        )}
+
+        {view === AppView.ICON_GEN && (
+          <div className="flex justify-center py-6">
+            <IconGenerator onBack={() => setView(AppView.DASHBOARD)} />
           </div>
         )}
       </main>
