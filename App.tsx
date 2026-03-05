@@ -156,9 +156,12 @@ const App: React.FC = () => {
         parts.push(`${minutes}분`);
     }
 
-    if (parts.length === 0) return "잠시 후 알람이 울립니다";
+    if (parts.length === 0) return { time: "잠시 후 알람이 울립니다", suffix: "" };
     
-    return parts.join(' ') + " 남았습니다";
+    return { 
+      time: parts.join(' '), 
+      suffix: " 남았습니다" 
+    };
   }, [nearestAlarm, currentTime]);
 
   const handleSaveAlarm = (data: any) => {
@@ -259,14 +262,22 @@ const App: React.FC = () => {
         {view === AppView.DASHBOARD && (
           <div className="space-y-6 sm:space-y-10">
             <div className="bg-sky-50 p-4 sm:p-6 sketch-border">
-              <h3 className="text-base sm:text-lg font-bold text-sky-800 mb-1 uppercase tracking-widest">다음 알람까지</h3>
               {nearestAlarm ? (
                 <div>
-                  <div className="text-2xl sm:text-4xl font-bold text-slate-800 mb-1">
-                    {timeRemainingString}
-                  </div>
-                  <div className="text-lg sm:text-xl text-emerald-600 font-bold truncate">
+                  <div className="text-lg sm:text-xl text-emerald-600 font-bold truncate mb-1">
                     {nearestAlarm.title} ({new Date(nearestAlarm.nextTriggerAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})
+                  </div>
+                  <div className="text-sm sm:text-base font-normal text-slate-500">
+                    {typeof timeRemainingString === 'string' ? (
+                      timeRemainingString
+                    ) : (
+                      <>
+                        <span className="font-bold text-slate-800">{timeRemainingString.time}</span>
+                        <span className="ml-1">
+                          {timeRemainingString.suffix}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               ) : <p className="text-lg sm:text-xl text-slate-400 font-bold">활성 알람 없음</p>}
