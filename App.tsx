@@ -5,7 +5,6 @@ import { SKETCH_ILLUSTRATIONS } from './constants';
 import { audioService } from './services/audioService';
 import AlarmCard from './components/AlarmCard';
 import AlarmForm from './components/AlarmForm';
-import IconGenerator from './components/IconGenerator';
 
 const App: React.FC = () => {
   const [view, setView] = useState<AppView>(AppView.DASHBOARD);
@@ -13,24 +12,39 @@ const App: React.FC = () => {
   const [editingAlarm, setEditingAlarm] = useState<Alarm | undefined>(undefined);
   const [activeAlert, setActiveAlert] = useState<Alarm | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [confirmSkip, setConfirmSkip] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('sketch_alarms');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const validated = parsed.map((a: any) => ({
-          ...a,
-          intervalType: a.intervalType || 'interval',
-          repeatDays: a.repeatDays || [],
-          intervalUnit: 'days'
-        }));
-        setAlarms(validated);
+        if (parsed.length > 0) {
+          const sampleTitles = ['아침 기상', '출근 준비', '점심 식사', '운동 시간', '저녁 약속', '취침 준비', '주말 늦잠'];
+          const validated = parsed
+            .filter((a: any) => !sampleTitles.includes(a.title))
+            .map((a: any) => ({
+              ...a,
+              intervalType: a.intervalType || 'interval',
+              repeatDays: a.repeatDays || [],
+              intervalUnit: 'days'
+            }));
+          setAlarms(validated);
+        }
       } catch (e) {
         console.error("Failed to parse saved alarms", e);
       }
     }
   }, []);
+
+  // 한 번 더 현재 상태에서 필터링 (이미 로드된 경우 대비)
+  useEffect(() => {
+    const sampleTitles = ['아침 기상', '출근 준비', '점심 식사', '운동 시간', '저녁 약속', '취침 준비', '주말 늦잠'];
+    const hasSamples = alarms.some(a => sampleTitles.includes(a.title));
+    if (hasSamples) {
+      setAlarms(prev => prev.filter(a => !sampleTitles.includes(a.title)));
+    }
+  }, [alarms]);
 
   useEffect(() => {
     localStorage.setItem('sketch_alarms', JSON.stringify(alarms));
@@ -131,7 +145,30 @@ const App: React.FC = () => {
   }, [activeAlert]);
 
   const sortedAlarms = useMemo(() => {
-    return [...alarms].sort((a, b) => new Date(a.nextTriggerAt).getTime() - new Date(b.nextTriggerAt).getTime());
+    const occurrences: (Alarm & { instanceTime: string })[] = [];
+    
+    alarms.forEach(alarm => {
+      if (!alarm.isActive) return;
+      
+      let nextTime: Date | null = new Date(alarm.nextTriggerAt);
+      // 각 알람 설정당 최대 10개의 미래 발생 건을 계산
+      for (let i = 0; i < 10; i++) {
+        if (!nextTime) break;
+        occurrences.push({
+          ...alarm,
+          instanceTime: nextTime.toISOString()
+        });
+        
+        // 다음 발생일 계산
+        nextTime = calculateNextOccurrence(nextTime, alarm);
+        if (!nextTime) break;
+      }
+    });
+
+    // 전체 발생 건 중 시간순으로 정렬 후 상위 10개 추출
+    return occurrences
+      .sort((a, b) => new Date(a.instanceTime).getTime() - new Date(b.instanceTime).getTime())
+      .slice(0, 10);
   }, [alarms]);
 
   const nearestAlarm = useMemo(() => {
@@ -236,6 +273,23 @@ const App: React.FC = () => {
     audioService.stopAlarmLoop();
   };
 
+  const handleSkipOccurrence = (id: string) => {
+    setAlarms(prev => prev.map(alarm => {
+      if (alarm.id !== id) return alarm;
+      
+      const currentNext = new Date(alarm.nextTriggerAt);
+      const nextNext = calculateNextOccurrence(currentNext, alarm);
+      
+      if (!nextNext) {
+        // 'once' type or no more occurrences
+        return { ...alarm, isActive: false };
+      }
+      
+      return { ...alarm, nextTriggerAt: nextNext.toISOString() };
+    }));
+    setConfirmSkip(null);
+  };
+
   if (activeAlert) {
     return (
       <div className="fixed inset-0 bg-rose-100 flex flex-col items-center justify-center z-50 p-6 text-center">
@@ -248,27 +302,27 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-40">
-      <nav className="p-4 sm:p-6 flex justify-between items-center max-w-5xl mx-auto">
+    <div className="min-h-screen pb-32">
+      <nav className="p-3 sm:p-5 flex justify-between items-center max-w-4xl mx-auto">
         <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => { setView(AppView.DASHBOARD); setEditingAlarm(undefined); }}>
-          <img src={SKETCH_ILLUSTRATIONS.CLOCK} alt="logo" className="w-8 h-8 sm:w-10 sm:h-10" />
-          <h1 className="text-2xl sm:text-4xl font-bold tracking-tight">맘대로 알람</h1>
+          <img src={SKETCH_ILLUSTRATIONS.CLOCK} alt="logo" className="w-7 h-7 sm:w-9 sm:h-9" />
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">맘대로 알람</h1>
         </div>
-        <div className="text-lg sm:text-2xl font-bold bg-white/50 px-3 py-1 sm:px-4 sm:py-1 sketch-border">
+        <div className="text-base sm:text-xl font-bold bg-white/50 px-2 py-0.5 sm:px-3 sm:py-1 sketch-border">
           {currentTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
         </div>
       </nav>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 mt-4">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 mt-2">
         {view === AppView.DASHBOARD && (
-          <div className="space-y-6 sm:space-y-10">
-            <div className="bg-sky-50 p-4 sm:p-6 sketch-border">
+          <div className="space-y-4 sm:space-y-7">
+            <div className="bg-sky-50 p-3 sm:p-5 sketch-border">
               {nearestAlarm ? (
                 <div>
-                  <div className="text-lg sm:text-xl text-emerald-600 font-bold truncate mb-1">
+                  <div className="text-base sm:text-lg text-emerald-600 font-bold truncate mb-1">
                     {nearestAlarm.title} ({new Date(nearestAlarm.nextTriggerAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })})
                   </div>
-                  <div className="text-sm sm:text-base font-normal text-slate-500">
+                  <div className="text-xs sm:text-sm font-normal text-slate-500">
                     {typeof timeRemainingString === 'string' ? (
                       timeRemainingString
                     ) : (
@@ -281,18 +335,12 @@ const App: React.FC = () => {
                     )}
                   </div>
                 </div>
-              ) : <p className="text-lg sm:text-xl text-slate-400 font-bold">활성 알람 없음</p>}
+              ) : <p className="text-base sm:text-lg text-slate-400 font-bold">활성 알람 없음</p>}
             </div>
 
             <section>
-              <div className="flex justify-between items-end mb-6 border-b-4 border-slate-200 pb-2">
-                <h2 className="text-3xl sm:text-5xl font-bold">나의 알람 목록</h2>
-                <button 
-                  onClick={() => setView(AppView.ICON_GEN)}
-                  className="text-sm sm:text-base font-bold text-rose-500 hover:text-rose-600 flex items-center gap-1 mb-1"
-                >
-                  <span>📱 iOS 아이콘 만들기</span>
-                </button>
+              <div className="flex justify-between items-end mb-4 border-b-4 border-slate-200 pb-2">
+                <h2 className="text-2xl sm:text-4xl font-bold">알람 목록</h2>
               </div>
               {alarms.length === 0 ? (
                 <div className="py-10 sm:py-20 text-center bg-white/40 sketch-border border-dashed">
@@ -302,9 +350,9 @@ const App: React.FC = () => {
                 <div className="bg-white sketch-border overflow-hidden flex flex-col shadow-lg">
                   {sortedAlarms.map((alarm, idx) => (
                     <AlarmCard 
-                      key={alarm.id} 
-                      alarm={alarm} 
-                      onDelete={(id) => confirm('삭제할까요?') && setAlarms(prev => prev.filter(a => a.id !== id))}
+                      key={`${alarm.id}-${alarm.instanceTime}`} 
+                      alarm={{ ...alarm, nextTriggerAt: alarm.instanceTime }} 
+                      onDelete={(id) => setConfirmSkip(id)}
                       onEdit={(a) => { setEditingAlarm(a); setView(AppView.CREATE); }}
                       colorIndex={idx}
                     />
@@ -312,6 +360,33 @@ const App: React.FC = () => {
                 </div>
               )}
             </section>
+
+            {/* 커스텀 삭제(건너뛰기) 확인 모달 */}
+            {confirmSkip && (
+              <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+                <div className="bg-white p-6 sm:p-8 sketch-border max-w-sm w-full text-center shadow-2xl">
+                  <h3 className="text-2xl sm:text-3xl font-bold mb-4">알람 시간 넘기기</h3>
+                  <p className="text-lg text-slate-600 mb-8">
+                    이 시간대의 알람을 목록에서 지우고<br/>
+                    다음 예정 시간으로 넘길까요?
+                  </p>
+                  <div className="flex gap-4">
+                    <button 
+                      onClick={() => setConfirmSkip(null)}
+                      className="flex-1 py-3 sketch-button font-bold text-slate-500"
+                    >
+                      취소
+                    </button>
+                    <button 
+                      onClick={() => handleSkipOccurrence(confirmSkip)}
+                      className="flex-1 py-3 bg-rose-500 text-white sketch-button font-bold border-rose-600"
+                    >
+                      확인
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -322,13 +397,12 @@ const App: React.FC = () => {
               initialData={editingAlarm} 
               onSubmit={handleSaveAlarm} 
               onCancel={() => { setEditingAlarm(undefined); setView(AppView.DASHBOARD); }} 
+              onDelete={(id) => {
+                setAlarms(prev => prev.filter(a => a.id !== id));
+                setEditingAlarm(undefined);
+                setView(AppView.DASHBOARD);
+              }}
             />
-          </div>
-        )}
-
-        {view === AppView.ICON_GEN && (
-          <div className="flex justify-center py-6">
-            <IconGenerator onBack={() => setView(AppView.DASHBOARD)} />
           </div>
         )}
       </main>
@@ -336,10 +410,10 @@ const App: React.FC = () => {
       {view === AppView.DASHBOARD && (
         <button 
           onClick={() => { setEditingAlarm(undefined); setView(AppView.CREATE); }}
-          className="fixed bottom-8 right-8 sm:bottom-12 sm:right-12 w-20 h-20 sm:w-28 sm:h-28 bg-rose-500 text-white rounded-full flex items-center justify-center shadow-[0_15px_30px_-5px_rgba(244,63,94,0.4)] hover:shadow-[0_20px_40px_-5px_rgba(244,63,94,0.5)] hover:scale-110 active:scale-95 transition-all z-40 border-4 border-white group"
+          className="fixed bottom-8 right-[calc(2rem+25%)] sm:bottom-12 sm:right-[calc(3rem+25%)] w-[68px] h-[68px] sm:w-[95px] sm:h-[95px] bg-rose-500 text-white rounded-full flex items-center justify-center shadow-[0_15px_30px_-5px_rgba(244,63,94,0.4)] hover:shadow-[0_20px_40px_-5px_rgba(244,63,94,0.5)] hover:scale-110 active:scale-95 transition-all z-40 border-4 border-white group"
           title="새 알람 추가"
         >
-          <span className="text-5xl sm:text-7xl leading-none block group-hover:rotate-90 transition-transform duration-300">+</span>
+          <span className="text-[40px] sm:text-[60px] leading-none block group-hover:rotate-90 transition-transform duration-300">+</span>
           
           {/* 장식용 원형 테두리 */}
           <div className="absolute inset-0 rounded-full border-2 border-rose-300/30 scale-90 pointer-events-none"></div>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { SOUND_OPTIONS, SKETCH_ILLUSTRATIONS } from '../constants';
 import { audioService } from '../services/audioService';
 import { IntervalUnit, Alarm, IntervalType } from '../types';
@@ -18,6 +18,7 @@ interface AlarmFormProps {
     volume: number;
   }) => void;
   onCancel: () => void;
+  onDelete?: (id: string) => void;
 }
 
 const DAYS = [
@@ -30,12 +31,11 @@ const DAYS = [
   { label: '토', value: 6 },
 ];
 
-const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }) => {
+const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel, onDelete }) => {
   const now = initialData?.startDate ? new Date(initialData.startDate) : new Date();
 
   const [title, setTitle] = useState(initialData?.title || '');
   
-  // 개별 날짜/시간 상태 (직접 입력을 위해 분리 - 새 알람일 경우 비워둠)
   const [year, setYear] = useState<number | string>(initialData ? now.getFullYear() : '');
   const [month, setMonth] = useState<number | string>(initialData ? now.getMonth() + 1 : '');
   const [day, setDay] = useState<number | string>(initialData ? now.getDate() : '');
@@ -47,6 +47,7 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
   const [repeatDays, setRepeatDays] = useState<number[]>(initialData?.repeatDays || []);
   const [soundId, setSoundId] = useState(initialData?.soundId || SOUND_OPTIONS[0].id);
   const [volume, setVolume] = useState<number | string>(initialData?.volume || 50);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const toggleDay = (dayValue: number) => {
     setRepeatDays(prev => 
@@ -85,7 +86,7 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
         check.setDate(check.getDate() + i);
         
         if (repeatDays.includes(check.getDay())) {
-           if (intervalValue > 1) {
+           if (Number(intervalValue) > 1) {
               const startRef = new Date(start.getTime());
               startRef.setDate(startRef.getDate() - startRef.getDay());
               startRef.setHours(0,0,0,0);
@@ -120,7 +121,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
       return;
     }
     
-    // 입력된 숫자값들로 Date 객체 생성 (Month는 0-indexed)
     const startDate = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute));
     
     if (isNaN(startDate.getTime())) {
@@ -143,7 +143,7 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
 
   const handleSoundSelection = (id: string) => {
     setSoundId(id);
-    audioService.play(id, volume);
+    audioService.play(id, Number(volume) || 50);
   };
 
   return (
@@ -154,7 +154,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* 제목 */}
         <div>
           <label className="block text-base font-bold mb-2 text-slate-600">제목</label>
           <input
@@ -167,7 +166,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
           />
         </div>
 
-        {/* 시작 일시 직접 입력 (Ultra Compact UI) */}
         <div className="bg-slate-50 p-3 sketch-border">
           <div className="flex items-center justify-between mb-2">
             <label className="text-base font-bold text-slate-600">시작 일시</label>
@@ -226,7 +224,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
           </div>
         </div>
 
-        {/* 볼륨 및 알람 반복 설정 */}
         <div className="space-y-6">
           <div>
             <label className="block text-xl sm:text-2xl font-bold mb-2">볼륨: {volume}%</label>
@@ -248,7 +245,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
                 onClick={() => setIntervalType('once')}
                 className={`flex-1 py-1.5 sketch-button text-sm sm:text-base font-bold transition-all ${intervalType === 'once' ? 'bg-sky-200 ring-1 ring-sky-400 shadow-inner' : 'bg-white opacity-70'}`}
               >
-                {/* 모바일에서는 더 짧게 */}
                 <span className="sm:hidden">한번</span>
                 <span className="hidden sm:inline">일자 지정</span>
               </button>
@@ -325,7 +321,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
                       ))}
                     </div>
                     
-                    {/* 주 단위 건너뛰기 설정 (주 건너뜀 형태 - 버튼 스타일) */}
                     <div className="flex gap-2 pt-3 border-t border-slate-100">
                       <div className="flex-1"></div>
                       <div className="flex-1 flex flex-col gap-2">
@@ -361,7 +356,6 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
           </div>
         </div>
 
-        {/* 소리 선택 리스트 */}
         <div>
           <label className="block text-xl sm:text-2xl font-bold mb-2">알람 소리 선택</label>
           <div className="h-40 sm:h-48 overflow-y-auto p-2 sketch-border bg-slate-50 space-y-2">
@@ -388,21 +382,56 @@ const AlarmForm: React.FC<AlarmFormProps> = ({ initialData, onSubmit, onCancel }
           </div>
         </div>
 
-        {/* 버튼 */}
-        <div className="flex gap-2 sm:gap-4 pt-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 py-3 sm:py-4 sketch-button bg-slate-200 text-xl sm:text-2xl font-bold"
-          >
-            취소
-          </button>
-          <button
-            type="submit"
-            className="flex-1 py-3 sm:py-4 sketch-button bg-rose-200 text-xl sm:text-2xl font-bold"
-          >
-            {initialData ? '저장' : '생성'}
-          </button>
+        <div className="flex flex-col gap-3 pt-2">
+          <div className="flex gap-2 sm:gap-4">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="flex-1 py-3 sm:py-4 sketch-button bg-slate-200 text-xl sm:text-2xl font-bold"
+            >
+              취소
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-3 sm:py-4 sketch-button bg-rose-200 text-xl sm:text-2xl font-bold"
+            >
+              {initialData ? '저장' : '생성'}
+            </button>
+          </div>
+          
+          {initialData && onDelete && (
+            <div className="mt-6 border-t-2 border-rose-100 pt-4">
+              {!showDeleteConfirm ? (
+                <button
+                  type="button"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="w-full py-3 sm:py-4 sketch-button bg-rose-100 text-rose-600 text-xl sm:text-2xl font-bold hover:bg-rose-200 transition-colors"
+                >
+                  삭제
+                </button>
+              ) : (
+                <div className="bg-rose-50 p-6 sketch-border border-rose-200 animate-in fade-in zoom-in duration-200">
+                  <p className="text-lg font-bold text-rose-600 mb-4 text-center">정말로 이 알람을 삭제할까요?</p>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 py-3 sketch-button bg-white text-slate-500 text-base font-bold"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => onDelete(initialData.id)}
+                      className="flex-1 py-3 sketch-button bg-rose-500 text-white text-base font-bold border-rose-600"
+                    >
+                      삭제 확인
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </form>
     </div>

@@ -45,39 +45,39 @@ const AlarmCard: React.FC<AlarmCardProps> = ({ alarm, onDelete, onEdit, colorInd
   };
 
   return (
-    <div className={`flex items-center w-full p-4 border-b-2 border-slate-200 ${bgColor} hover:brightness-95 transition-all group`}>
+    <div className={`flex items-center w-full py-2 px-3 sm:px-4 border-b-2 border-slate-200 ${bgColor} hover:brightness-95 transition-all group`}>
       {/* 1. 알람 시간 및 날짜 (좌측 배치) */}
-      <div className="shrink-0 flex flex-col border-r-2 border-slate-300 border-dashed mr-3 sm:mr-4 pr-3 sm:pr-4 min-w-[70px] sm:min-w-[80px] items-center">
-        <div className="text-2xl sm:text-3xl font-bold text-slate-800 leading-none mb-1">
+      <div className="shrink-0 flex flex-col border-r-2 border-slate-300 border-dashed mr-2 sm:mr-3 pr-2 sm:pr-3 min-w-[50px] sm:min-w-[60px] items-center">
+        <div className="text-lg sm:text-xl font-bold text-slate-800 leading-none mb-0.5">
           {timeStr}
         </div>
-        <div className="text-lg sm:text-xl font-bold text-rose-500 leading-none">
+        <div className="text-sm sm:text-base font-bold text-rose-500 leading-none">
           {dateStr}
         </div>
       </div>
 
       {/* 2. 알람 이름 (중앙) */}
       <div className="flex-1 min-w-0 pr-2">
-        <h3 className="text-xl sm:text-3xl font-bold truncate text-slate-800">
+        <h3 className="text-base sm:text-xl font-bold truncate text-slate-800">
           {alarm.title}
         </h3>
       </div>
 
       {/* 3. 수정 및 삭제 (우측) */}
-      <div className="flex items-center gap-2 shrink-0 ml-auto">
+      <div className="flex items-center gap-4 sm:gap-8 shrink-0 ml-auto">
         {/* 수정 마크 */}
         <button 
           onClick={() => onEdit(alarm)}
-          className="hover:rotate-12 transition-transform active:scale-90 p-2 flex items-center justify-center"
+          className="hover:rotate-12 transition-transform active:scale-90 p-1 flex items-center justify-center"
           title="수정하기"
         >
-          <img src={SKETCH_ILLUSTRATIONS.EDIT} alt="Edit" className="w-6 h-6 opacity-40 group-hover:opacity-100 transition-opacity" />
+          <img src={SKETCH_ILLUSTRATIONS.EDIT} alt="Edit" className="w-4 h-4 sm:w-5 sm:h-5 opacity-40 group-hover:opacity-100 transition-opacity" />
         </button>
 
         {/* 삭제 버튼 */}
         <button 
           onClick={() => onDelete(alarm.id)}
-          className="w-10 h-10 flex items-center justify-center text-4xl font-bold text-slate-400 hover:text-rose-500 transition-colors leading-none pb-1"
+          className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center text-2xl sm:text-3xl font-bold text-slate-400 hover:text-rose-500 transition-colors leading-none pb-0.5"
           title="삭제"
         >
           ×

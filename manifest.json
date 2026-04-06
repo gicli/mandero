@@ -1,0 +1,17 @@
+{
+  "name": "맘대로 알람",
+  "short_name": "맘대로 알람",
+  "description": "세련된 디자인의 맞춤형 알람 시계",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#9381ff",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/2972/2972531.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

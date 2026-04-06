@@ -25,6 +25,5 @@ export interface SoundOption {
 
 export enum AppView {
   DASHBOARD = 'DASHBOARD',
-  CREATE = 'CREATE',
-  ICON_GEN = 'ICON_GEN'
+  CREATE = 'CREATE'
 }
