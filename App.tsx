@@ -20,15 +20,12 @@ const App: React.FC = () => {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.length > 0) {
-          const sampleTitles = ['아침 기상', '출근 준비', '점심 식사', '운동 시간', '저녁 약속', '취침 준비', '주말 늦잠'];
-          const validated = parsed
-            .filter((a: any) => !sampleTitles.includes(a.title))
-            .map((a: any) => ({
-              ...a,
-              intervalType: a.intervalType || 'interval',
-              repeatDays: a.repeatDays || [],
-              intervalUnit: 'days'
-            }));
+          const validated = parsed.map((a: any) => ({
+            ...a,
+            intervalType: a.intervalType || 'interval',
+            repeatDays: a.repeatDays || [],
+            intervalUnit: 'days'
+          }));
           setAlarms(validated);
         }
       } catch (e) {
@@ -36,15 +33,6 @@ const App: React.FC = () => {
       }
     }
   }, []);
-
-  // 한 번 더 현재 상태에서 필터링 (이미 로드된 경우 대비)
-  useEffect(() => {
-    const sampleTitles = ['아침 기상', '출근 준비', '점심 식사', '운동 시간', '저녁 약속', '취침 준비', '주말 늦잠'];
-    const hasSamples = alarms.some(a => sampleTitles.includes(a.title));
-    if (hasSamples) {
-      setAlarms(prev => prev.filter(a => !sampleTitles.includes(a.title)));
-    }
-  }, [alarms]);
 
   useEffect(() => {
     localStorage.setItem('sketch_alarms', JSON.stringify(alarms));
@@ -65,7 +53,7 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [alarms, activeAlert]);
 
-  const calculateNextOccurrence = (baseDate: Date, alarm: { intervalType: string, intervalValue: number, repeatDays: number[], startDate: string }): Date | null => {
+  const calculateNextOccurrence = useCallback((baseDate: Date, alarm: { intervalType: string, intervalValue: number, repeatDays: number[], startDate: string }): Date | null => {
     const next = new Date(baseDate.getTime());
     const start = new Date(alarm.startDate);
     
@@ -133,16 +121,25 @@ const App: React.FC = () => {
     next.setSeconds(0);
     next.setMilliseconds(0);
     return next;
-  };
+  }, []);
 
   const triggerAlarm = useCallback((alarm: Alarm) => {
     if (activeAlert) return;
     setActiveAlert(alarm);
     audioService.startAlarmLoop(alarm.soundId, alarm.volume);
     
-    // 알람이 울리면 목록에서 삭제 (사용자 요청: 울린 항목은 삭제되고 다음 순번이 올라옴)
-    setAlarms(prev => prev.filter(a => a.id !== alarm.id));
-  }, [activeAlert]);
+    // 알람이 울리면 다음 발생 시점으로 업데이트 (사용자 요청: 목록에서 사라지지 않게 함)
+    setAlarms(prev => prev.map(a => {
+      if (a.id !== alarm.id) return a;
+      
+      const nextOccurrence = calculateNextOccurrence(new Date(a.nextTriggerAt), a);
+      if (!nextOccurrence) {
+        // 1회성 알람인 경우 비활성화
+        return { ...a, isActive: false };
+      }
+      return { ...a, nextTriggerAt: nextOccurrence.toISOString() };
+    }));
+  }, [activeAlert, calculateNextOccurrence]);
 
   const sortedAlarms = useMemo(() => {
     const occurrences: (Alarm & { instanceTime: string })[] = [];

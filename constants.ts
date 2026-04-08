@@ -17,6 +17,7 @@ export const SOUND_OPTIONS: SoundOption[] = [
   { id: 'starlight-lullaby', name: '별빛 아래 자장가', description: '오르골의 맑은 소리가 마음을 편안하게 해주는 선율' },
   { id: 'techno-pulse', name: '테크노 펄스', description: '강렬한 비트와 전자음으로 잠을 깨워주는 클럽 사운드' },
   { id: 'morning-coffee', name: '카페의 아침', description: '잔잔한 보사노바 리듬과 함께하는 여유로운 시작' },
+  { id: 'k-pop-morning', name: '상큼발랄 K-POP', description: '아이돌 오프닝처럼 밝고 에너지 넘치는 아침' },
   { id: 'space-odyssey', name: '우주 오디세이', description: '신비롭고 웅장한 우주 공간의 울림' }
 ];
 

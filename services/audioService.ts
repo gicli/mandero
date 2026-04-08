@@ -48,82 +48,114 @@ class AudioService {
     const g = (volume / 100) * 0.6;
 
     switch (soundId) {
-      case 'crystal-morning': // 맑은 아침의 종소리 - 더 길고 우아하게
-        const crystalNotes = [659.25, 783.99, 1046.50, 783.99, 880.00, 659.25];
-        crystalNotes.forEach((f, i) => {
-          this.playNote(ctx, f, now + i * 0.6, 0.8, g, 'sine');
-        });
-        break;
-
-      case 'horizon-echo': // 지평선의 메아리 - 웅장한 전개
-        const horizonNotes = [493.88, 659.25, 739.99, 987.77, 880.00, 739.99, 659.25];
-        horizonNotes.forEach((f, i) => {
-          this.playNote(ctx, f, now + i * 0.7, 1.0, g, 'triangle');
-        });
-        break;
-
-      case 'nostalgic-melody': // 추억의 폴더폰 - 멜로디 반복 및 확장
-        const nokia = [659.25, 587.33, 369.99, 415.30, 659.25, 587.33, 369.99, 415.30];
-        nokia.forEach((f, i) => {
-          this.playNote(ctx, f, now + i * 0.3, 0.25, g, 'square');
-        });
-        break;
-
-      case 'warm-piano': // 따스한 햇살 피아노 - 풍성한 코드 진행
-        const pianoChords = [
-          [261.63, 329.63, 392.00], // C
-          [349.23, 440.00, 523.25], // F
-          [392.00, 493.88, 587.33], // G
-          [261.63, 329.63, 392.00, 523.25] // C2
+      case 'crystal-morning': // 맑은 아침의 종소리 - 아이폰 스타일 (더 길고 풍성하게)
+        const crystalMelody = [
+          { f: 659.25, t: 0 }, { f: 783.99, t: 0.4 }, { f: 1046.50, t: 0.8 }, 
+          { f: 783.99, t: 1.2 }, { f: 880.00, t: 1.6 }, { f: 659.25, t: 2.0 },
+          { f: 783.99, t: 2.4 }, { f: 659.25, t: 2.8 }, { f: 523.25, t: 3.2 }
         ];
-        pianoChords.forEach((chord, i) => {
-          chord.forEach(f => this.playNote(ctx, f, now + i * 1.2, 2.5, g * 0.4, 'sine'));
+        crystalMelody.forEach(n => {
+          this.playNote(ctx, n.f, now + n.t, 1.2, g, 'sine');
+          this.playNote(ctx, n.f * 2, now + n.t, 0.8, g * 0.3, 'sine'); // Shimmer
         });
         break;
 
-      case 'sunrise-edm': // 활기찬 시작 EDM - 비트 수 증가
-        for (let i = 0; i < 16; i++) {
-          this.playNote(ctx, 110, now + i * 0.2, 0.15, g * 1.5, 'sawtooth');
-          if (i % 2 === 0) this.playNote(ctx, 880, now + i * 0.2 + 0.1, 0.1, g * 0.5, 'square');
-          if (i % 4 === 0) this.playNote(ctx, 55, now + i * 0.2, 0.3, g * 2, 'sine');
-        }
-        break;
-
-      case 'nature-chorus': // 숲속의 아침 산책 - 더 많은 새소리와 앰비언스
-        for (let i = 0; i < 12; i++) {
-          const t = now + i * 0.4;
-          this.playSlide(ctx, 2000 + Math.random() * 1500, 3000 + Math.random() * 1000, 0.2, g * 0.2, 'sine', t);
-          if (i % 3 === 0) this.playNote(ctx, 150, t, 1.0, g * 0.1, 'sine'); // 바람 소리 느낌
-        }
-        break;
-
-      case 'zen-sanctuary': // 명상 힐링 벨 - 긴 여운과 배음
-        const zenFreqs = [110, 164.81, 220, 329.63];
-        zenFreqs.forEach((f, i) => {
-          this.playNote(ctx, f, now + i * 1.5, 6.0, g * 0.6, 'sine');
-          this.playNote(ctx, f + 1, now + i * 1.5, 6.0, g * 0.3, 'sine');
+      case 'horizon-echo': // 지평선의 메아리 - 갤럭시 스타일 (웅장한 오케스트라 느낌)
+        const horizonMelody = [
+          { f: 493.88, t: 0 }, { f: 659.25, t: 0.5 }, { f: 739.99, t: 1.0 }, 
+          { f: 987.77, t: 1.5 }, { f: 880.00, t: 2.2 }, { f: 739.99, t: 2.7 }, 
+          { f: 659.25, t: 3.2 }, { f: 493.88, t: 4.0 }, { f: 659.25, t: 4.5 }
+        ];
+        horizonMelody.forEach(n => {
+          this.playNote(ctx, n.f, now + n.t, 1.5, g, 'triangle');
+          this.playNote(ctx, n.f / 2, now + n.t, 1.5, g * 0.5, 'sine'); // Bass layer
         });
         break;
 
-      case 'pixel-quest': // 8비트 레트로 모험 - 긴 아르페지오 패턴
-        const pixelArp = [523.25, 659.25, 783.99, 1046.50, 880.00, 698.46, 523.25];
+      case 'nostalgic-melody': // 추억의 폴더폰 - 노키아 튠 (완전한 멜로디)
+        const nokiaTune = [
+          { f: 659.25, t: 0 }, { f: 587.33, t: 0.2 }, { f: 369.99, t: 0.4 }, { f: 415.30, t: 0.6 },
+          { f: 554.37, t: 0.8 }, { f: 493.88, t: 1.0 }, { f: 293.66, t: 1.2 }, { f: 329.63, t: 1.4 },
+          { f: 440.00, t: 1.6 }, { f: 392.00, t: 1.8 }, { f: 246.94, t: 2.0 }, { f: 261.63, t: 2.2 }
+        ];
+        nokiaTune.forEach(n => {
+          this.playNote(ctx, n.f, now + n.t, 0.25, g, 'square');
+        });
+        break;
+
+      case 'warm-piano': // 따스한 햇살 피아노 - 풍성한 코드와 멜로디
+        const pianoProgression = [
+          { chord: [261.63, 329.63, 392.00], t: 0, mel: 523.25 },
+          { chord: [349.23, 440.00, 523.25], t: 1.5, mel: 659.25 },
+          { chord: [392.00, 493.88, 587.33], t: 3.0, mel: 783.99 },
+          { chord: [261.63, 329.63, 392.00], t: 4.5, mel: 523.25 }
+        ];
+        pianoProgression.forEach(p => {
+          p.chord.forEach(f => this.playNote(ctx, f, now + p.t, 3.0, g * 0.3, 'sine'));
+          this.playNote(ctx, p.mel, now + p.t + 0.3, 2.0, g * 0.5, 'sine');
+        });
+        break;
+
+      case 'sunrise-edm': // 활기찬 시작 EDM - 4마디 빌드업과 드롭
+        for (let i = 0; i < 32; i++) {
+          const t = now + i * 0.125;
+          const freq = i < 16 ? 110 : 55;
+          this.playNote(ctx, freq, t, 0.1, g * (i < 16 ? 1.0 : 1.5), 'sawtooth');
+          if (i % 4 === 0) this.playNote(ctx, 440, t, 0.05, g * 0.5, 'square');
+          if (i > 16 && i % 2 === 0) this.playNote(ctx, 880, t + 0.06, 0.05, g * 0.3, 'sine');
+        }
+        break;
+
+      case 'nature-chorus': // 숲속의 아침 산책 - 레이어드 자연음
+        for (let i = 0; i < 20; i++) {
+          const t = now + i * 0.3;
+          // 새소리 1
+          this.playSlide(ctx, 2500 + Math.sin(i) * 500, 3500, 0.15, g * 0.15, 'sine', t);
+          // 새소리 2
+          if (i % 2 === 0) this.playSlide(ctx, 4000, 3000, 0.2, g * 0.1, 'sine', t + 0.1);
+          // 바람 소리
+          if (i % 5 === 0) this.playNote(ctx, 100, t, 2.0, g * 0.05, 'sine');
+        }
+        break;
+
+      case 'zen-sanctuary': // 명상 힐링 벨 - 싱잉볼 스타일
+        const bowls = [146.83, 220.00, 293.66, 440.00];
+        bowls.forEach((f, i) => {
+          const t = now + i * 2.0;
+          this.playNote(ctx, f, t, 8.0, g * 0.7, 'sine');
+          this.playNote(ctx, f * 1.5, t + 0.1, 6.0, g * 0.2, 'sine');
+          this.playNote(ctx, f * 2, t + 0.2, 4.0, g * 0.1, 'sine');
+        });
+        break;
+
+      case 'pixel-quest': // 8비트 레트로 모험 - 경쾌한 게임 테마
+        const marioStyle = [
+          659.25, 659.25, 0, 659.25, 0, 523.25, 659.25, 0, 783.99, 0, 0, 0, 392.00
+        ];
+        marioStyle.forEach((f, i) => {
+          if (f > 0) this.playNote(ctx, f, now + i * 0.15, 0.1, g, 'square');
+        });
+        break;
+
+      case 'midnight-jazz': // 세련된 재즈 라운지 - 스윙 리듬 베이스와 코드
+        const jazzNotes = [
+          { f: 146.83, t: 0 }, { f: 220.00, t: 0.4 }, { f: 185.00, t: 0.75 }, { f: 146.83, t: 1.15 },
+          { f: 164.81, t: 1.5 }, { f: 246.94, t: 1.9 }, { f: 220.00, t: 2.25 }, { f: 164.81, t: 2.65 }
+        ];
+        jazzNotes.forEach(n => {
+          this.playNote(ctx, n.f, now + n.t, 0.4, g, 'triangle');
+          if (n.t % 1.5 === 0) {
+            [n.f * 1.5, n.f * 2].forEach(f => this.playNote(ctx, f, now + n.t, 1.0, g * 0.2, 'sine'));
+          }
+        });
+        break;
+
+      case 'panic-pulse': // 절대 못 자는 경고음 - 사이렌과 긴박한 비트
         for (let i = 0; i < 24; i++) {
-          this.playNote(ctx, pixelArp[i % pixelArp.length], now + i * 0.15, 0.12, g, 'square');
-        }
-        break;
-
-      case 'midnight-jazz': // 세련된 재즈 라운지 - 워킹 베이스 라인 확장
-        const jazzLine = [146.83, 185.00, 220.00, 277.18, 293.66, 220.00, 185.00, 146.83];
-        jazzLine.forEach((f, i) => {
-          this.playNote(ctx, f, now + i * 0.5, 0.5, g, 'triangle');
-        });
-        break;
-
-      case 'panic-pulse': // 절대 못 자는 경고음 - 더 빠르고 긴박하게
-        for (let i = 0; i < 12; i++) {
-          const freq = i % 2 === 0 ? 880 : 440;
-          this.playNote(ctx, freq, now + i * 0.3, 0.15, g * 2.5, 'sawtooth');
-          this.playNote(ctx, freq * 1.5, now + i * 0.3 + 0.1, 0.1, g * 1.5, 'square');
+          const t = now + i * 0.2;
+          const freq = i % 2 === 0 ? 987.77 : 880.00;
+          this.playSlide(ctx, freq, freq * 1.2, 0.15, g * 2.5, 'sawtooth', t);
+          if (i % 4 === 0) this.playNote(ctx, 60, t, 0.1, g * 3, 'sine');
         }
         break;
 
@@ -167,6 +199,22 @@ class AudioService {
           this.playNote(ctx, f, now + i * 0.4, 0.3, g * 0.6, 'triangle');
           if (i % 2 === 0) this.playNote(ctx, 1000, now + i * 0.4 + 0.1, 0.05, g * 0.1, 'sine'); // 컵 소리 느낌
         });
+        break;
+
+      case 'k-pop-morning': // 상큼발랄 K-POP - 밝고 빠른 신스 멜로디
+        const kpop = [
+          { f: 523.25, t: 0 }, { f: 523.25, t: 0.15 }, { f: 587.33, t: 0.3 }, { f: 659.25, t: 0.45 },
+          { f: 783.99, t: 0.6 }, { f: 880.00, t: 0.75 }, { f: 783.99, t: 0.9 }, { f: 659.25, t: 1.05 },
+          { f: 523.25, t: 1.2 }, { f: 523.25, t: 1.35 }, { f: 587.33, t: 1.5 }, { f: 659.25, t: 1.65 },
+          { f: 783.99, t: 1.8 }, { f: 1046.50, t: 2.1 }
+        ];
+        kpop.forEach(n => {
+          this.playNote(ctx, n.f, now + n.t, 0.15, g, 'sine');
+          this.playNote(ctx, n.f * 1.01, now + n.t + 0.02, 0.15, g * 0.5, 'sine'); // Chorus effect
+        });
+        for (let i = 0; i < 16; i++) {
+          this.playNote(ctx, 60, now + i * 0.2, 0.05, g * 1.5, 'sine'); // Kick
+        }
         break;
 
       case 'space-odyssey': // 우주 오디세이
