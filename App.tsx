@@ -14,45 +14,6 @@ const App: React.FC = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [confirmSkip, setConfirmSkip] = useState<string | null>(null);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('sketch_alarms');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.length > 0) {
-          const validated = parsed.map((a: any) => ({
-            ...a,
-            intervalType: a.intervalType || 'interval',
-            repeatDays: a.repeatDays || [],
-            intervalUnit: 'days'
-          }));
-          setAlarms(validated);
-        }
-      } catch (e) {
-        console.error("Failed to parse saved alarms", e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('sketch_alarms', JSON.stringify(alarms));
-  }, [alarms]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-      
-      alarms.forEach(alarm => {
-        if (!alarm.isActive) return;
-        if (now.getTime() >= new Date(alarm.nextTriggerAt).getTime()) {
-          triggerAlarm(alarm);
-        }
-      });
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [alarms, activeAlert]);
-
   const calculateNextOccurrence = useCallback((baseDate: Date, alarm: { intervalType: string, intervalValue: number, repeatDays: number[], startDate: string }): Date | null => {
     const next = new Date(baseDate.getTime());
     const start = new Date(alarm.startDate);
@@ -123,6 +84,63 @@ const App: React.FC = () => {
     return next;
   }, []);
 
+  useEffect(() => {
+    const saved = localStorage.getItem('sketch_alarms');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.length > 0) {
+          const now = new Date();
+          const validated = parsed.map((a: any) => {
+            let alarm = {
+              ...a,
+              intervalType: a.intervalType || 'interval',
+              repeatDays: a.repeatDays || [],
+              intervalUnit: 'days'
+            };
+
+            // 과거에 멈춰있는 알람들을 현재 시점으로 끌어올림 (무한 루프 방지)
+            if (alarm.isActive && alarm.intervalType !== 'once') {
+              let nextTrigger = new Date(alarm.nextTriggerAt);
+              let catchUpCount = 0;
+              while (nextTrigger.getTime() < now.getTime() && catchUpCount < 50) {
+                const next = calculateNextOccurrence(nextTrigger, alarm);
+                if (!next) break;
+                nextTrigger = next;
+                catchUpCount++;
+              }
+              alarm.nextTriggerAt = nextTrigger.toISOString();
+            }
+
+            return alarm;
+          });
+          setAlarms(validated);
+        }
+      } catch (e) {
+        console.error("Failed to parse saved alarms", e);
+      }
+    }
+  }, [calculateNextOccurrence]);
+
+  useEffect(() => {
+    localStorage.setItem('sketch_alarms', JSON.stringify(alarms));
+  }, [alarms]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+      
+      alarms.forEach(alarm => {
+        if (!alarm.isActive) return;
+        if (now.getTime() >= new Date(alarm.nextTriggerAt).getTime()) {
+          triggerAlarm(alarm);
+        }
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [alarms, activeAlert]);
+
   const triggerAlarm = useCallback((alarm: Alarm) => {
     if (activeAlert) return;
     setActiveAlert(alarm);
@@ -166,7 +184,7 @@ const App: React.FC = () => {
     return occurrences
       .sort((a, b) => new Date(a.instanceTime).getTime() - new Date(b.instanceTime).getTime())
       .slice(0, 10);
-  }, [alarms]);
+  }, [alarms, calculateNextOccurrence]);
 
   const nearestAlarm = useMemo(() => {
     const activeOnes = alarms.filter(a => a.isActive);
